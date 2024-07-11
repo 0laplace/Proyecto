@@ -1,0 +1,4 @@
+python-dotenv
+paramiko  # Para SFTP
+cryptography  # Para encriptación
+requests  # Para hacer solicitudes a la API

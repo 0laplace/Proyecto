@@ -1,0 +1,32 @@
+# Dockerfile.sftp
+FROM alpine:latest
+
+# Actualizar e instalar SSH y herramientas necesarias
+RUN apk update && \
+    apk add --no-cache openssh-server openrc && \
+    rm -rf /var/cache/apk/*
+
+# Generar las claves de host SSH necesarias
+RUN ssh-keygen -A
+
+# Crear el grupo y el usuario sftpuser
+RUN addgroup sftpgroup && \
+    adduser -D -G sftpgroup sftpuser
+
+# Crear la estructura de directorios .ssh y copiar la clave pública autorizada
+RUN mkdir -p /home/sftpuser/.ssh && \
+    touch /home/sftpuser/.ssh/authorized_keys && \
+    chown -R sftpuser:sftpgroup /home/sftpuser/.ssh && \
+    chmod 700 /home/sftpuser/.ssh && \
+    chmod 600 /home/sftpuser/.ssh/authorized_keys
+
+# Copiar tu clave pública al contenedor
+COPY id_rsa.pub /home/sftpuser/.ssh/authorized_keys
+
+# Configurar el servidor SSH
+COPY sshd_config /etc/ssh/sshd_config
+
+# Exponer el puerto 22 y arrancar el servidor SSH
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
+

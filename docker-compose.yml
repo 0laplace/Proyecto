@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    container_name: my_app_container
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OUTPUT_DIRECTORY=/app/json
+    command: python /app/create_table.py
+
+  sftp:
+    build:
+      context: .
+      dockerfile: Dockerfile.sftp
+    container_name: sftp_server
+    ports:
+      - "2222:22"
+    volumes:
+      - ./sftp_upload:/home/sftpuser/upload
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    container_name: cron_container
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      sh -c "echo '* * * * * python /app/extract_data.py' > /etc/crontabs/root &&
+             echo '* * * * * python /app/transform_data.py' >> /etc/crontabs/root &&
+             echo '* * * * * python /app/summary_generator.py' >> /etc/crontabs/root &&
+             echo '* * * * * python /app/upload_files.py' >> /etc/crontabs/root &&
+             crond -f"
